@@ -13,18 +13,11 @@ namespace YavaTool
     {
         static void Main(string[] args)
         {
-            /*var world = new World();
-
-            for (int x = 0; x < 100; x++) {
-                for (int y = 0; y < 100; y++)
-                {
-                    world.set(x, y, 0, "rock");
-                }
-            }*/
 
             //Fortblox.load(@"C:\Users\cogg\Desktop\fortblox\data\maps\test.map");
+            //Minecraft.load(@"C:\Users\cogg\AppData\Roaming\.minecraft\saves\MEME\region\r.0.0.mca");
 
-            var world = Minecraft.load(@"C:\Users\cogg\AppData\Roaming\.minecraft\saves\MEME\region\r.0.0.mca");
+            var world = VBSP.load(@"C:\Program Files (x86)\Steam\steamapps\common\GarrysMod\garrysmod\maps\gm_construct.bsp",20);
 
             world.save(@"C:\Program Files (x86)\Steam\steamapps\common\GarrysMod\garrysmod\data\yava\testbed\testout.yava.dat");
             Console.ReadKey();
