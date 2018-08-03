@@ -167,11 +167,11 @@ namespace YavaTool
                 }
 
                 for (int i = 0; i < brushes.Length; i++) {
-                    //Console.WriteLine("Voxelizing Brush " + (i + 1) + " / " + brushes.Length);
+                    Console.WriteLine("Voxelizing Brush " + (i + 1) + " / " + brushes.Length);
 
                     var brush = brushes[i];
 
-                    if ((brush.contents & 1) != 0)
+                    //if ((brush.contents & 1) != 0)
                     {
                         var material = extract_material(brush, sides, texinfo, texdata, texstrings);
 
@@ -238,6 +238,13 @@ namespace YavaTool
             if (str == "TOOLS/TOOLSNODRAW")
                 return null;
 
+            if (str.StartsWith("TOOLS/"))
+            {
+                //Console.WriteLine(str);
+                return "void";
+            }
+
+
             if (str.Contains("CONCRETE"))
                 return "rock";
 
@@ -259,8 +266,15 @@ namespace YavaTool
             if (str.Contains("PLASTER"))
                 return "light";
 
+            if (str.Contains("WATER"))
+                return "water";
+
+            // =>
             if (str == "GM_CONSTRUCT/WALL_TOP" || str == "GM_CONSTRUCT/WALL_BOTTOM")
                 return "dark";
+
+            if (str.Contains("COLOR_ROOM"))
+                return "void";
 
             Console.WriteLine(">>> "+ str);
             return null;
@@ -271,35 +285,53 @@ namespace YavaTool
             HashSet<(int, int, int)> seen = new HashSet<(int, int, int)>();
             Queue<(int, int, int)> todo = new Queue<(int, int, int)>();
 
+            for (int i = 0; i < planes.Length; i++)
+            {
+                planes[i].d /= world.scale;
+            }
+
+            // Setup start pos
             {
                 float start_x = 0;
                 float start_y = 0;
                 float start_z = 0;
 
-                float nx = 0;
-                float ny = 0;
-                float nz = 0;
-
-                for (int i = 0; i < planes.Length; i++)
+                int axis = 0;
+                for (int i = 0; i < 1; i++)
                 {
-                    planes[i].d /= world.scale;
+                    float old_x = start_x;
+                    float old_y = start_y;
+                    float old_z = start_z;
 
-                    var plane = planes[i];
+                    foreach (var plane in planes)
+                    {
+                        redo:
+                        axis = (axis + 1) % 3;
+                        switch (axis)
+                        {
+                            case 0:
+                                if (plane.x == 0)
+                                    goto redo;
+                                start_x = (plane.d - (plane.y * start_y) - (plane.z * start_z)) / plane.x;
+                                break;
+                            case 1:
+                                if (plane.y == 0)
+                                    goto redo;
+                                start_y = (plane.d - (plane.x * start_x) - (plane.z * start_z)) / plane.y;
+                                break;
+                            case 2:
+                                if (plane.z == 0)
+                                    goto redo;
+                                start_z = (plane.d - (plane.x * start_x) - (plane.y * start_y)) / plane.z;
+                                break;
+                        }
+                    }
 
-                    start_x += plane.x * plane.d;
-                    start_y += plane.y * plane.d;
-                    start_z += plane.z * plane.d;
-
-                    nx += Math.Abs(plane.x);
-                    ny += Math.Abs(plane.y);
-                    nz += Math.Abs(plane.z);
+                    float distance = Math.Abs(old_x - start_x) + Math.Abs(old_y - start_y) + Math.Abs(old_z - start_z);
+                    Console.WriteLine("~"+distance);
                 }
 
-                start_x /= nx;
-                start_y /= ny;
-                start_z /= nz;
-
-                var start = ((int)start_x, (int)start_y, (int)start_z);
+                var start = ((int)Math.Round(start_x), (int)Math.Round(start_y), (int)Math.Round(start_z));
                 seen.Add(start);
                 todo.Enqueue(start);
             }
@@ -316,7 +348,7 @@ namespace YavaTool
                 foreach (var plane in planes)
                 {
                     float m = plane.x * x + plane.y * y + plane.z * z - plane.d;
-                    if (m > .5)
+                    if (m > 0.70710678118)
                     {
                         good = false;
                         break;
@@ -326,7 +358,7 @@ namespace YavaTool
                 {
                     try_add_block(pos, world, material);
 
-                    (int,int,int)[] near = {
+                    (int, int, int)[] near = {
                         (x + 1, y, z),
                         (x - 1, y, z),
                         (x, y + 1, z),
@@ -342,6 +374,15 @@ namespace YavaTool
                             todo.Enqueue(near_pos);
                         }
                     }
+                } else if (seen.Count == 1) {
+                    Console.WriteLine("RER");
+                    for (int i = 0; i < planes.Length; i++)
+                    {
+                        var plane = planes[i];
+
+                        Console.WriteLine(":: " + plane.x + " " + plane.y + " " + plane.z + " :: " + plane.d);
+                    }
+                    try_add_block(pos, world, "test");
                 }
             }
 
@@ -356,7 +397,7 @@ namespace YavaTool
         static void try_add_block((int,int,int) pos, World world, string material) {
             int x = pos.Item1 + 400;
             int y = pos.Item2 + 400;
-            int z = pos.Item3 + 40;
+            int z = pos.Item3 + 60;
 
             if (x >= 0 && y >= 0 && z >= 0)
             {
