@@ -17,7 +17,9 @@ namespace YavaTool
             //Fortblox.load(@"C:\Users\cogg\Desktop\fortblox\data\maps\test.map");
             //Minecraft.load(@"C:\Users\cogg\AppData\Roaming\.minecraft\saves\MEME\region\r.0.0.mca");
 
-            var world = VBSP.load(@"C:\Program Files (x86)\Steam\steamapps\common\GarrysMod\garrysmod\maps\gm_construct.bsp",20);
+            //var world = VBSP.load(@"C:\Program Files (x86)\Steam\steamapps\common\GarrysMod\garrysmod\maps\gm_construct.bsp",20);
+
+            var world = VBSP.load(@"D:\Users\Mad-P\Desktop\BACKUP\vbsp\gm_bigcity.bsp", 40);
 
             world.save(@"C:\Program Files (x86)\Steam\steamapps\common\GarrysMod\garrysmod\data\yava\testbed\testout.yava.dat");
             Console.ReadKey();
@@ -62,6 +64,16 @@ namespace YavaTool
             }
 
             chunk.set(x & 0x1F, y & 0x1F, z & 0x1F, id);
+
+            // Force chunks above blocks to init
+            if ((z & 0x1F) == 31)
+            {
+                chunk_coords.Item3++;
+                if (!chunks.TryGetValue(chunk_coords, out chunk))
+                {
+                    chunks.Add(chunk_coords, new Chunk());
+                }
+            }
         }
 
         public void save(string filename)
